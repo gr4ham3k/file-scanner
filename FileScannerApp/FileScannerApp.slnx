@@ -1,0 +1,12 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Elementy rozwiązania/">
+    <File Path="FolderSelection.cs" />
+  </Folder>
+  <Project Path="FileScannerApp.csproj" Id="27615207-ab86-4737-a589-aed8c02fb752">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+</Solution>
