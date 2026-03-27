@@ -133,9 +133,16 @@ namespace FileScannerApp
             {
                 if (scanForm.ShowDialog() == DialogResult.OK)
                 {
-                    string selected = scanForm.SelectedFolder;
+                    selectedPath = scanForm.SelectedFolder;
 
-                    await StartScanAsync(selected);
+                    var files = FileScanner.Scan(selectedPath);
+                    db.SaveFiles(files);
+
+                    var dbFiles = db.GetFiles();
+                    FolderService.ShowFilesFromDb(filesView, dbFiles);
+                    UpdateStatus();
+
+                    await StartScanAsync(selectedPath);
                 }
             }
         }
