@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
 using System.IO;
+using System.Text.Json;
 
 namespace FileScannerApp
 {
@@ -150,40 +151,63 @@ namespace FileScannerApp
             }
         }
 
-        public List<dynamic> GetScanResults(int scanId)
+        public List<ScanResultView> GetScanResults(int scanId)
         {
-            var results = new List<dynamic>();
+            var results = new List<ScanResultView>();
 
-            using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
+            var connection = new SQLiteConnection($"Data Source={this.dbPath}");
+            connection.Open();
+
+            var cmd = new SQLiteCommand(
+                "SELECT f.Name, r.Status, r.ApiResponse FROM ScanResults r JOIN Files f ON r.FileId = f.Id WHERE r.ScanId = @scanId",
+                connection
+            );
+            cmd.Parameters.AddWithValue("@scanId", scanId);
+
+            var reader = cmd.ExecuteReader();
+
+            while (reader.Read())
             {
-                connection.Open();
+                string fileName = reader.GetString(0);
+                string status = reader.GetString(1);
+                string json = reader.GetString(2);
 
-                var cmd = new SQLiteCommand(
-                    "SELECT f.Name, r.Status, r.ApiResponse FROM ScanResults r JOIN Files f ON r.FileId = f.Id WHERE r.ScanId = @scanId",
-                    connection
-                );
-
-                cmd.Parameters.AddWithValue("@scanId", scanId);
-
-                using (var reader = cmd.ExecuteReader())
+                
+                int malicious = 0;
+                if (!string.IsNullOrEmpty(json))
                 {
-                    while (reader.Read())
+                    try
                     {
-                        string json = reader.GetString(2);
-
-                        bool isMalicious = json.Contains("malicious");
-
-                        results.Add(new
-                        {
-                            FileName = reader.GetString(0),
-                            Status = reader.GetString(1),
-                            Malicious = isMalicious ? "Yes" : "No",
-                        });
+                        var doc = JsonDocument.Parse(json);
+                        malicious = doc.RootElement
+                                       .GetProperty("data")
+                                       .GetProperty("attributes")
+                                       .GetProperty("last_analysis_stats")
+                                       .GetProperty("malicious")
+                                       .GetInt32();
+                    }
+                    catch
+                    {
+                        malicious = 0;
                     }
                 }
+
+                results.Add(new ScanResultView
+                {
+                    FileName = fileName,
+                    Status = status,
+                    Malicious = malicious > 0 ? "Yes" : "No"
+                });
             }
 
             return results;
+        }
+
+        public class ScanResultView
+        {
+            public string FileName { get; set; }
+            public string Status { get; set; }
+            public string Malicious { get; set; }
         }
 
         public List<dynamic> GetAllScansWithResults()

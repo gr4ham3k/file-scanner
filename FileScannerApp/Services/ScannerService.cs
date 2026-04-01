@@ -1,40 +1,71 @@
-﻿using FileScannerApp.Models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
-using System.Linq;
 
 namespace FileScannerApp.Services
 {
-    using System.Net.Http;
-    using System.Threading.Tasks;
-
     public class ScanService
     {
         private readonly string apiKey;
+        private readonly HttpClient client;
 
         public ScanService(string apiKey)
         {
             this.apiKey = apiKey;
+            client = new HttpClient();
+            client.DefaultRequestHeaders.Add("x-apikey", apiKey);
         }
 
-        public async Task<string> ScanFileAsync(string filePath)
+        public async Task<string> ScanFileAsync(string filePath, string scanMode)
         {
-            using (var client = new HttpClient())
+            switch (scanMode)
             {
-                client.DefaultRequestHeaders.Add("x-apikey", apiKey);
+                case "Quick":
+                    return await ScanByHash(filePath);
 
-                using (var content = new MultipartFormDataContent())
-                {
-                    var fileBytes = File.ReadAllBytes(filePath);
-                    content.Add(new ByteArrayContent(fileBytes), "file", Path.GetFileName(filePath));
+                case "Deep":
+                    return await UploadAndScan(filePath);
 
-                    var response = await client.PostAsync("https://www.virustotal.com/api/v3/files", content);
-                    string json = await response.Content.ReadAsStringAsync();
-                    return json;
-                }
+                default:
+                    return await ScanByHash(filePath);
+            }
+        }
+
+        private async Task<string> ScanByHash(string filePath)
+        {
+            string hash = CalculateSHA256(filePath);
+
+            var response = await client.GetAsync($"https://www.virustotal.com/api/v3/files/{hash}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return "NotFound";
+            }
+
+            return await response.Content.ReadAsStringAsync();
+        }
+
+        private async Task<string> UploadAndScan(string filePath)
+        {
+            using (var content = new MultipartFormDataContent())
+            {
+                var fileBytes = File.ReadAllBytes(filePath);
+                content.Add(new ByteArrayContent(fileBytes), "file", Path.GetFileName(filePath));
+
+                var response = await client.PostAsync("https://www.virustotal.com/api/v3/files", content);
+                return await response.Content.ReadAsStringAsync();
+            }
+        }
+
+        private string CalculateSHA256(string filePath)
+        {
+            using (var sha256 = SHA256.Create())
+            using (var stream = File.OpenRead(filePath))
+            {
+                var hash = sha256.ComputeHash(stream);
+                return BitConverter.ToString(hash).Replace("-", "").ToLower();
             }
         }
     }

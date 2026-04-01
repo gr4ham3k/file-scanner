@@ -1,9 +1,12 @@
 ﻿using FileScannerApp;
 using FileScannerApp.Services;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Windows.Forms;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace FileScannerApp
@@ -133,7 +136,10 @@ namespace FileScannerApp
             {
                 if (scanForm.ShowDialog() == DialogResult.OK)
                 {
+                   
                     selectedPath = scanForm.SelectedFolder;
+                    string scanMode = scanForm.ScanMode;
+                    List<string> fileTypes = scanForm.FileTypes;
 
                     var files = FileScanner.Scan(selectedPath);
                     db.SaveFiles(files);
@@ -142,17 +148,21 @@ namespace FileScannerApp
                     FolderService.ShowFilesFromDb(filesView, dbFiles);
                     UpdateStatus();
 
-                    await StartScanAsync(selectedPath);
+                    await StartScanAsync(selectedPath, scanMode, fileTypes);
                 }
             }
         }
 
-        private async Task StartScanAsync(string folder)
+        private async Task StartScanAsync(string folder, string scanMode, List<string> fileTypes)
         {
-            toolStripStatusLabel3.Text = "Skanowanie w toku...";
-            toolStripStatusLabel4.Text = "";
 
-            var files = db.GetFiles($"Path LIKE '{folder}%'");
+            var files = db.GetFiles($"Path LIKE '{folder.Replace("'", "''")}%'");
+
+            if (fileTypes != null && fileTypes.Count > 0)
+            {
+                files = files.Where(f => fileTypes.Contains(f.Extension.ToLower())).ToList();
+            }
+
 
             if (files.Count == 0)
             {
@@ -162,6 +172,9 @@ namespace FileScannerApp
 
             int scanId = db.CreateScan(folder, files.Count);
             int threatsFound = 0;
+
+            toolStripStatusLabel3.Text = "Skanowanie w toku...";
+            toolStripStatusLabel4.Text = "";
 
             toolStripProgressBar1.Visible = true;
             toolStripProgressBar1.Minimum = 0;
@@ -177,9 +190,19 @@ namespace FileScannerApp
 
                 try
                 {
-                    string json = await scanService.ScanFileAsync(file.Path);
+                    string json = await scanService.ScanFileAsync(file.Path,scanMode);
 
-                    if (json.Contains("malicious"))
+                    var doc = JsonDocument.Parse(json);
+
+                    int malicious = doc
+                        .RootElement
+                        .GetProperty("data")
+                        .GetProperty("attributes")
+                        .GetProperty("last_analysis_stats")
+                        .GetProperty("malicious")
+                        .GetInt32();
+
+                    if (malicious > 0)
                         threatsFound++;
 
                     db.SaveScanResult(scanId, file.Id, "Completed", json);
