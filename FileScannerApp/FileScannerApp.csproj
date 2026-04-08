@@ -131,7 +131,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Database\Database.cs" />
-    <Compile Include="FileScanner.cs" />
+    <Compile Include="Services\FileScannerService.cs" />
     <Compile Include="FileScannerMain.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -166,6 +166,7 @@
       <DependentUpon>ScanResultsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Services\FolderService.cs" />
+    <Compile Include="Services\OrganizerService.cs" />
     <Compile Include="Services\PreviewService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

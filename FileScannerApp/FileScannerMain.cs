@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace FileScannerApp
 {
@@ -56,7 +57,7 @@ namespace FileScannerApp
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    var files = FileScanner.Scan(dialog.SelectedPath);
+                    var files = FileScannerService.Scan(dialog.SelectedPath);
 
                     selectedPath = dialog.SelectedPath;
                     
@@ -235,7 +236,7 @@ namespace FileScannerApp
                     string scanMode = scanForm.ScanMode;
                     List<string> fileTypes = scanForm.FileTypes;
 
-                    var files = FileScanner.Scan(selectedPath);
+                    var files = FileScannerService.Scan(selectedPath);
                     db.SaveFiles(files);
 
                     var dbFiles = db.GetFiles();
@@ -352,8 +353,25 @@ namespace FileScannerApp
 
         private void organizeBtn_Click(object sender, EventArgs e)
         {
-            var organizeForm = new OrganizeForm(selectedPath);
-            organizeForm.Show();
+            
+            var form = new OrganizeForm(selectedPath);
+
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                string path = Organizer.OrganizeFiles(
+                    form.SelectedFolder,
+                    form.SelectedDestination,
+                    form.FileTypes,
+                    form.Radio,
+                    form.Options[0],
+                    form.Options[1],
+                    form.Options[2]
+                );
+
+                MessageBox.Show("Pliki zostały pomyślnie zorganizowane!", "Sukces", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                System.Diagnostics.Process.Start("explorer.exe", form.SelectedDestination);
+
+            }
         }
     }
 }

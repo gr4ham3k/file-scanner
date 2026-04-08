@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-public class FileScanner
+public class FileScannerService
 {
     public static FileInfo[] Scan(string path)
     {

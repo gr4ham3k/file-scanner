@@ -36,12 +36,12 @@
             this.checkBoxes = new System.Windows.Forms.CheckedListBox();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
-            this.button1 = new System.Windows.Forms.Button();
+            this.changeDestinationBtn = new System.Windows.Forms.Button();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.checkedListBox1 = new System.Windows.Forms.CheckedListBox();
             this.label5 = new System.Windows.Forms.Label();
-            this.radioButton1 = new System.Windows.Forms.RadioButton();
-            this.radioButton2 = new System.Windows.Forms.RadioButton();
+            this.radioMove = new System.Windows.Forms.RadioButton();
+            this.radioCopy = new System.Windows.Forms.RadioButton();
             this.button2 = new System.Windows.Forms.Button();
             this.button3 = new System.Windows.Forms.Button();
             this.SuspendLayout();
@@ -98,7 +98,6 @@
             this.checkBoxes.Name = "checkBoxes";
             this.checkBoxes.Size = new System.Drawing.Size(170, 105);
             this.checkBoxes.TabIndex = 13;
-            this.checkBoxes.SelectedIndexChanged += new System.EventHandler(this.checkBoxes_SelectedIndexChanged);
             // 
             // label3
             // 
@@ -119,14 +118,15 @@
             this.label4.Text = "Destination:";
             this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
-            // button1
+            // changeDestinationBtn
             // 
-            this.button1.Image = ((System.Drawing.Image)(resources.GetObject("button1.Image")));
-            this.button1.Location = new System.Drawing.Point(431, 320);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(25, 23);
-            this.button1.TabIndex = 15;
-            this.button1.UseVisualStyleBackColor = true;
+            this.changeDestinationBtn.Image = ((System.Drawing.Image)(resources.GetObject("changeDestinationBtn.Image")));
+            this.changeDestinationBtn.Location = new System.Drawing.Point(431, 320);
+            this.changeDestinationBtn.Name = "changeDestinationBtn";
+            this.changeDestinationBtn.Size = new System.Drawing.Size(25, 23);
+            this.changeDestinationBtn.TabIndex = 15;
+            this.changeDestinationBtn.UseVisualStyleBackColor = true;
+            this.changeDestinationBtn.Click += new System.EventHandler(this.changeDestinationBtn_Click);
             // 
             // textBox1
             // 
@@ -161,27 +161,28 @@
             this.label5.TabIndex = 17;
             this.label5.Text = "Options";
             // 
-            // radioButton1
+            // radioMove
             // 
-            this.radioButton1.AutoSize = true;
-            this.radioButton1.Location = new System.Drawing.Point(238, 411);
-            this.radioButton1.Name = "radioButton1";
-            this.radioButton1.Size = new System.Drawing.Size(89, 20);
-            this.radioButton1.TabIndex = 19;
-            this.radioButton1.TabStop = true;
-            this.radioButton1.Text = "Move files";
-            this.radioButton1.UseVisualStyleBackColor = true;
+            this.radioMove.AutoSize = true;
+            this.radioMove.Checked = true;
+            this.radioMove.Location = new System.Drawing.Point(238, 411);
+            this.radioMove.Name = "radioMove";
+            this.radioMove.Size = new System.Drawing.Size(89, 20);
+            this.radioMove.TabIndex = 19;
+            this.radioMove.TabStop = true;
+            this.radioMove.Text = "Move files";
+            this.radioMove.UseVisualStyleBackColor = true;
             // 
-            // radioButton2
+            // radioCopy
             // 
-            this.radioButton2.AutoSize = true;
-            this.radioButton2.Location = new System.Drawing.Point(347, 411);
-            this.radioButton2.Name = "radioButton2";
-            this.radioButton2.Size = new System.Drawing.Size(87, 20);
-            this.radioButton2.TabIndex = 20;
-            this.radioButton2.TabStop = true;
-            this.radioButton2.Text = "Copy files";
-            this.radioButton2.UseVisualStyleBackColor = true;
+            this.radioCopy.AutoSize = true;
+            this.radioCopy.Location = new System.Drawing.Point(347, 411);
+            this.radioCopy.Name = "radioCopy";
+            this.radioCopy.Size = new System.Drawing.Size(87, 20);
+            this.radioCopy.TabIndex = 20;
+            this.radioCopy.TabStop = true;
+            this.radioCopy.Text = "Copy files";
+            this.radioCopy.UseVisualStyleBackColor = true;
             // 
             // button2
             // 
@@ -191,6 +192,7 @@
             this.button2.TabIndex = 21;
             this.button2.Text = "Organize";
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // button3
             // 
@@ -209,12 +211,12 @@
             this.ClientSize = new System.Drawing.Size(667, 600);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.button2);
-            this.Controls.Add(this.radioButton2);
-            this.Controls.Add(this.radioButton1);
+            this.Controls.Add(this.radioCopy);
+            this.Controls.Add(this.radioMove);
             this.Controls.Add(this.checkedListBox1);
             this.Controls.Add(this.label5);
             this.Controls.Add(this.label4);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.changeDestinationBtn);
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.checkBoxes);
             this.Controls.Add(this.label3);
@@ -238,12 +240,12 @@
         private System.Windows.Forms.CheckedListBox checkBoxes;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button changeDestinationBtn;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.CheckedListBox checkedListBox1;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.RadioButton radioButton1;
-        private System.Windows.Forms.RadioButton radioButton2;
+        private System.Windows.Forms.RadioButton radioMove;
+        private System.Windows.Forms.RadioButton radioCopy;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.Button button3;
     }
