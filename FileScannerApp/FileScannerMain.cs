@@ -89,6 +89,100 @@ namespace FileScannerApp
             }
         }
 
+        private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filesView.SelectedItems.Count == 0)
+                return;
+
+            var result = MessageBox.Show(
+                $"Na pewno chcesz usunąć {filesView.SelectedItems.Count} plik(ów)?",
+                "Potwierdzenie usunięcia",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning
+            );
+
+            if (result != DialogResult.Yes)
+                return;
+
+            foreach (ListViewItem item in filesView.SelectedItems)
+            {
+                string path = item.Tag.ToString();
+
+                try
+                {
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Błąd usuwania pliku: " + ex.Message);
+                }
+
+                db.DeleteFile(path);
+                filesView.Items.Remove(item);
+            }
+            UpdateStatus();
+        }
+
+        private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            int selectedCount = filesView.SelectedItems.Count;
+
+            renameToolStripMenuItem.Enabled = selectedCount == 1;
+
+            deleteToolStripMenuItem.Enabled = selectedCount > 0;
+        }
+
+        private void renameToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filesView.SelectedItems.Count != 1)
+                return;
+            
+            
+            var item = filesView.SelectedItems[0];
+            item.BeginEdit();
+            
+
+        }
+
+        private void filesView_AfterLabelEdit(object sender, LabelEditEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(e.Label))
+            {
+                e.CancelEdit = true;
+                return;
+            }
+
+            var item = filesView.Items[e.Item];
+            string oldPath = item.Tag.ToString();
+            string directory = Path.GetDirectoryName(oldPath);
+            string newName = e.Label;
+            string newPath = Path.Combine(directory, newName);
+
+            if (File.Exists(newPath))
+            {
+                MessageBox.Show("Plik o takiej nazwie już istnieje!");
+                e.CancelEdit = true;
+                return;
+            }
+
+            try
+            {
+                File.Move(oldPath, newPath);
+                db.UpdateFilePath(oldPath, newPath);
+
+                item.Tag = newPath; 
+                item.SubItems[3].Text = newPath; 
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Błąd zmiany nazwy: " + ex.Message);
+                e.CancelEdit = true;
+            }
+        }
+
         private void Filter_Click(object sender, EventArgs e)
         {
             var button = sender as ToolStripButton;
@@ -205,11 +299,11 @@ namespace FileScannerApp
                     if (malicious > 0)
                         threatsFound++;
 
-                    db.SaveScanResult(scanId, file.Id, "Completed", json);
+                    db.SaveScanResult(scanId, file.Name, "Completed", json);
                 }
                 catch (Exception ex)
                 {
-                    db.SaveScanResult(scanId, file.Id, "Error", ex.Message);
+                    db.SaveScanResult(scanId, file.Name, "Error", ex.Message);
                 }
 
                 
@@ -254,6 +348,12 @@ namespace FileScannerApp
         {
             var historyForm = new HistoryForm();
             historyForm.Show();
+        }
+
+        private void organizeBtn_Click(object sender, EventArgs e)
+        {
+            var organizeForm = new OrganizeForm(selectedPath);
+            organizeForm.Show();
         }
     }
 }

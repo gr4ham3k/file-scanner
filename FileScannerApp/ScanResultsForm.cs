@@ -22,8 +22,7 @@ namespace FileScannerApp
 
         private void ScanResultsForm_Load(object sender, EventArgs e)
         {
-            var results = db.GetScanResults(scanId);
-
+            var results = db.GetFilesForScan(scanId);
             dataGridView1.DataSource = results;
 
             StyleGrid();

@@ -1,6 +1,8 @@
 ﻿using FileScannerApp.Models;
+using OpenXmlPowerTools;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.IO;
 using System.Text.Json;
@@ -90,6 +92,41 @@ namespace FileScannerApp
             return list;
         }
 
+        public void DeleteFile(string path)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
+            {
+                connection.Open();
+
+                string query = "DELETE FROM Files WHERE Path = @path";
+
+                using (SQLiteCommand command = new SQLiteCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@path", path);
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public void UpdateFilePath(string oldPath, string newPath)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
+            {
+                connection.Open();
+
+                string query = "UPDATE Files SET Path = @newPath, Name = @name WHERE Path = @oldPath";
+
+                using (var command = new SQLiteCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@newPath", newPath);
+                    command.Parameters.AddWithValue("@oldPath", oldPath);
+                    command.Parameters.AddWithValue("@name", Path.GetFileName(newPath));
+
+                    command.ExecuteNonQuery();
+                }
+            }
+        }
+
         public int CreateScan(string folderPath, int filesCount)
         {
             using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
@@ -111,19 +148,19 @@ namespace FileScannerApp
             }
         }
 
-        public void SaveScanResult(int scanId, int fileId, string status, string apiResponse)
+        public void SaveScanResult(int scanId, string fileName, string status, string apiResponse)
         {
             using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
             {
                 connection.Open();
 
                 var cmd = new SQLiteCommand(@"
-                    INSERT INTO ScanResults (ScanId, FileId, Status, ApiResponse)
-                    VALUES (@scanId, @fileId, @status, @response);
+                INSERT INTO ScanResults (ScanId, FileName, Status, ApiResponse)
+                VALUES (@scanId, @fileName, @status, @response);
                 ", connection);
 
                 cmd.Parameters.AddWithValue("@scanId", scanId);
-                cmd.Parameters.AddWithValue("@fileId", fileId);
+                cmd.Parameters.AddWithValue("@fileName", fileName);
                 cmd.Parameters.AddWithValue("@status", status);
                 cmd.Parameters.AddWithValue("@response", apiResponse);
 
@@ -151,66 +188,62 @@ namespace FileScannerApp
             }
         }
 
-        public List<ScanResultView> GetScanResults(int scanId)
+        public List<dynamic> GetFilesForScan(int scanId)
         {
-            var results = new List<ScanResultView>();
+            var files = new List<dynamic>();
 
-            var connection = new SQLiteConnection($"Data Source={this.dbPath}");
-            connection.Open();
-
-            var cmd = new SQLiteCommand(
-                "SELECT f.Name, r.Status, r.ApiResponse FROM ScanResults r JOIN Files f ON r.FileId = f.Id WHERE r.ScanId = @scanId",
-                connection
-            );
-            cmd.Parameters.AddWithValue("@scanId", scanId);
-
-            var reader = cmd.ExecuteReader();
-
-            while (reader.Read())
+            using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
             {
-                string fileName = reader.GetString(0);
-                string status = reader.GetString(1);
-                string json = reader.GetString(2);
+                connection.Open();
 
-                
-                int malicious = 0;
-                if (!string.IsNullOrEmpty(json))
+                var cmd = new SQLiteCommand(@"
+                SELECT FileName, Status, ApiResponse
+                FROM ScanResults
+                WHERE ScanId = @scanId
+                ORDER BY FileName;
+                ", connection);
+
+                cmd.Parameters.AddWithValue("@scanId", scanId);
+
+                using (var reader = cmd.ExecuteReader())
                 {
-                    try
+                    while (reader.Read())
                     {
-                        var doc = JsonDocument.Parse(json);
-                        malicious = doc.RootElement
-                                       .GetProperty("data")
-                                       .GetProperty("attributes")
-                                       .GetProperty("last_analysis_stats")
-                                       .GetProperty("malicious")
-                                       .GetInt32();
-                    }
-                    catch
-                    {
-                        malicious = 0;
+                        int malicious = 0;
+                        string json = reader.IsDBNull(2) ? null : reader.GetString(2);
+
+                        if (!string.IsNullOrEmpty(json))
+                        {
+                            try
+                            {
+                                var doc = JsonDocument.Parse(json);
+                                malicious = doc.RootElement
+                                               .GetProperty("data")
+                                               .GetProperty("attributes")
+                                               .GetProperty("last_analysis_stats")
+                                               .GetProperty("malicious")
+                                               .GetInt32();
+                            }
+                            catch
+                            {
+                                malicious = 0;
+                            }
+                        }
+
+                        files.Add(new
+                        {
+                            FileName = reader.GetString(0),
+                            Status = reader.GetString(1),
+                            Malicious = malicious > 0 ? "Yes" : "No"
+                        });
                     }
                 }
-
-                results.Add(new ScanResultView
-                {
-                    FileName = fileName,
-                    Status = status,
-                    Malicious = malicious > 0 ? "Yes" : "No"
-                });
             }
 
-            return results;
+            return files;
         }
 
-        public class ScanResultView
-        {
-            public string FileName { get; set; }
-            public string Status { get; set; }
-            public string Malicious { get; set; }
-        }
-
-        public List<dynamic> GetAllScansWithResults()
+        public List<dynamic> GetAllScansWithFiles()
         {
             var scans = new List<dynamic>();
 
@@ -219,21 +252,37 @@ namespace FileScannerApp
                 connection.Open();
 
                 var cmd = new SQLiteCommand(@"
-                    SELECT s.Id, s.ScanDate, s.ScanPath, s.FilesCount, s.ThreatsFound, s.Status,
-                    f.Name, r.Status AS FileStatus, r.ApiResponse
-                    FROM Scans s
-                    LEFT JOIN ScanResults r ON s.Id = r.ScanId
-                    LEFT JOIN Files f ON r.FileId = f.Id
-                    ORDER BY s.Id DESC
-                    ", connection);
+                SELECT s.Id, s.ScanDate, s.ScanPath, s.FilesCount, s.ThreatsFound, s.Status,
+                   r.FileName, r.Status AS FileStatus, r.ApiResponse
+                FROM Scans s
+                LEFT JOIN ScanResults r ON s.Id = r.ScanId
+                ORDER BY s.Id DESC, r.FileName ASC;
+                ", connection);
 
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
                     {
-                        string json = reader.GetString(8);
+                        int malicious = 0;
+                        string json = reader.IsDBNull(8) ? null : reader.GetString(8);
 
-                        bool isMalicious = json.Contains("malicious");
+                        if (!string.IsNullOrEmpty(json))
+                        {
+                            try
+                            {
+                                var doc = JsonDocument.Parse(json);
+                                malicious = doc.RootElement
+                                               .GetProperty("data")
+                                               .GetProperty("attributes")
+                                               .GetProperty("last_analysis_stats")
+                                               .GetProperty("malicious")
+                                               .GetInt32();
+                            }
+                            catch
+                            {
+                                malicious = 0;
+                            }
+                        }
 
                         scans.Add(new
                         {
@@ -245,7 +294,7 @@ namespace FileScannerApp
                             ScanStatus = reader.GetString(5),
                             FileName = reader.IsDBNull(6) ? null : reader.GetString(6),
                             FileStatus = reader.IsDBNull(7) ? null : reader.GetString(7),
-                            Malicious = isMalicious ? "Yes" : "No",
+                            Malicious = malicious > 0 ? "Yes" : "No"
                         });
                     }
                 }

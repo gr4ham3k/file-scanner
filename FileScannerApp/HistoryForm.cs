@@ -20,9 +20,9 @@ namespace FileScannerApp
         private void HistoryForm_Load(object sender, EventArgs e)
         {
             var db = new Database();
-            var scans = db.GetAllScansWithResults();
+            var scans = db.GetAllScansWithFiles();
 
-            treeViewHistory.Nodes.Clear();
+            treeView1.Nodes.Clear();
 
             var grouped = scans.GroupBy(s => s.ScanId);
 
@@ -42,10 +42,9 @@ namespace FileScannerApp
                     }
                 }
 
-                treeViewHistory.Nodes.Add(scanNode);
+                treeView1.Nodes.Add(scanNode);
             }
 
-            
         }
 
         private void button1_Click(object sender, EventArgs e)
