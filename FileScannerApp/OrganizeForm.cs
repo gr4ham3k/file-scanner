@@ -33,6 +33,10 @@ namespace FileScannerApp
                 {
                     textBoxFolder.Text = dialog.SelectedPath;
                     SelectedFolder = dialog.SelectedPath;
+
+                    var db = new Database();
+                    var files = FileScannerService.Scan(SelectedFolder);
+                    db.SaveFiles(files);
                 }
             }
         }
@@ -91,10 +95,6 @@ namespace FileScannerApp
 
                     case "Overwrite existing files":
                         Options[1] = true;
-                        break;
-
-                    case "Add numeric suffix on conflicts":
-                        Options[2] = true;
                         break;
                 }
             }

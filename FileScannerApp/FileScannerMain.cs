@@ -364,14 +364,19 @@ namespace FileScannerApp
                     form.FileTypes,
                     form.Radio,
                     form.Options[0],
-                    form.Options[1],
-                    form.Options[2]
+                    form.Options[1]
                 );
 
                 MessageBox.Show("Pliki zostały pomyślnie zorganizowane!", "Sukces", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 System.Diagnostics.Process.Start("explorer.exe", form.SelectedDestination);
 
             }
+        }
+
+        private void renameBtn_Click(object sender, EventArgs e)
+        {
+            var form = new RenameForm(selectedPath);
+            form.Show();
         }
     }
 }

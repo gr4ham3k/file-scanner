@@ -12,8 +12,7 @@ namespace FileScannerApp
             List<string> fileTypes,
             string operation,
             bool createSubfolders,
-            bool overwriteExisting,
-            bool addNumericSuffix)
+            bool overwriteExisting)
         {
             if (!Directory.Exists(sourceFolder))
                 throw new DirectoryNotFoundException("Folder źródłowy nie istnieje.");
@@ -21,60 +20,74 @@ namespace FileScannerApp
             if (!Directory.Exists(destinationFolder))
                 Directory.CreateDirectory(destinationFolder);
 
-            var files = Directory.GetFiles(sourceFolder, "*.*", SearchOption.TopDirectoryOnly);
+            var db = new Database();
+            var files = db.GetFiles();
 
             foreach (var file in files)
             {
-                string ext = Path.GetExtension(file).ToLower();
+                string extension = file.Extension.ToLower();
 
-                if (!fileTypes.Contains(ext))
+                bool filterEnabled = fileTypes != null && fileTypes.Count > 0;
+
+                if (filterEnabled && !fileTypes.Contains(extension))
                     continue;
 
                 string targetFolder = destinationFolder;
 
                 if (createSubfolders)
                 {
-                    string typeFolder = GetTypeFolder(ext);
+                    string typeFolder = GetTypeFolder(extension);
                     targetFolder = Path.Combine(destinationFolder, typeFolder);
 
                     if (!Directory.Exists(targetFolder))
                         Directory.CreateDirectory(targetFolder);
                 }
 
-                string fileName = Path.GetFileName(file);
-                string targetPath = Path.Combine(targetFolder, fileName);
+                string fileName = Path.GetFileNameWithoutExtension(file.Name);
+                string fileExt = file.Extension;
 
-                if (File.Exists(targetPath))
-                {
-                    if (overwriteExisting)
-                    {
-                        if (operation == "move") File.Delete(targetPath);
-                    }
-                    else if (addNumericSuffix)
-                    {
-                        int counter = 1;
-                        string nameWithoutExt = Path.GetFileNameWithoutExtension(file);
-                        string extension = Path.GetExtension(file);
+                string targetPath = Path.Combine(targetFolder, fileName + fileExt);
 
-                        do
-                        {
-                            targetPath = Path.Combine(targetFolder, $"{nameWithoutExt}({counter}){extension}");
-                            counter++;
-                        } while (File.Exists(targetPath));
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
+                targetPath = ResolveConflict(fileName, fileExt, targetPath, overwriteExisting, targetFolder);
 
                 if (operation == "move")
-                    File.Move(file, targetPath);
+                {
+                    if (File.Exists(targetPath))
+                        File.Delete(targetPath);
+
+                    File.Move(file.Path, targetPath);
+                }
                 else
-                    File.Copy(file, targetPath);
+                {
+                    File.Copy(file.Path, targetPath,overwriteExisting);
+                }
             }
 
             return destinationFolder;
+        }
+
+        private static string ResolveConflict(string fileName, string fileExt, string targetPath,
+            bool overwriteExisting, string targetFolder)
+        {
+            if (!File.Exists(targetPath))
+                return targetPath;
+
+            if (overwriteExisting)
+                return targetPath;
+
+            string folder = targetFolder;
+
+            int counter = 1;
+            string newPath;
+
+            do
+            {
+                newPath = Path.Combine(folder, $"{fileName}({counter}){fileExt}");
+                counter++;
+            }
+            while (File.Exists(newPath));
+
+            return newPath;
         }
 
         private static string GetTypeFolder(string ext)
@@ -85,19 +98,23 @@ namespace FileScannerApp
                 case ".msi":
                 case ".bat":
                     return "Executables";
+
                 case ".pdf":
                 case ".docx":
                 case ".txt":
                     return "Documents";
+
                 case ".jpg":
                 case ".png":
                 case ".bmp":
                 case ".gif":
                     return "Images";
+
                 case ".mp4":
                 case ".avi":
                 case ".mkv":
                     return "Videos";
+
                 default:
                     return "Others";
             }
