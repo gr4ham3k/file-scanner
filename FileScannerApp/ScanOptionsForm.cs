@@ -16,25 +16,13 @@ namespace FileScannerApp
     {
         public string SelectedFolder { get; private set; }
         public List<string> FileTypes { get; private set; } = new List<string>();
-        public string ScanMode { get; private set; }
         public ScanOptionsForm(string selectedFolder)
         {
             InitializeComponent();
 
             this.SelectedFolder = selectedFolder;
+            textBoxFolder.Text = SelectedFolder;
 
-            comboBox1.SelectedIndex = 0;
-            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
-
-        }
-
-        private void ScanOptionsForm_Load(object sender, EventArgs e)
-        {
-            if (!string.IsNullOrEmpty(SelectedFolder))
-            {
-                textBoxFolder.Text = SelectedFolder;
-            }
-            
         }
 
 
@@ -44,8 +32,13 @@ namespace FileScannerApp
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    textBoxFolder.Text = dialog.SelectedPath;
-                    SelectedFolder = dialog.SelectedPath;
+                    this.SelectedFolder = dialog.SelectedPath;
+                    textBoxFolder.Text = SelectedFolder;
+
+                    var db = new Database();
+                    var files = FileScannerService.Scan(SelectedFolder);
+                    db.SaveFiles(files);
+
                 }
             }
         }
@@ -93,7 +86,6 @@ namespace FileScannerApp
                 }
             }
 
-            ScanMode = comboBox1.SelectedItem.ToString();
         }
 
         private void button2_Click(object sender, EventArgs e)

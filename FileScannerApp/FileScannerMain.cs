@@ -225,30 +225,25 @@ namespace FileScannerApp
 
         private async void scanButtonClick(object sender, EventArgs e)
         {
-            string folder = selectedPath;
 
-            using (var scanForm = new ScanOptionsForm(folder))
+            using (var scanForm = new ScanOptionsForm(selectedPath))
             {
                 if (scanForm.ShowDialog() == DialogResult.OK)
                 {
-                   
-                    selectedPath = scanForm.SelectedFolder;
-                    string scanMode = scanForm.ScanMode;
-                    List<string> fileTypes = scanForm.FileTypes;
+                    this.selectedPath = scanForm.SelectedFolder;
 
-                    var files = FileScannerService.Scan(selectedPath);
-                    db.SaveFiles(files);
+                    var fileTypes = scanForm.FileTypes;
 
                     var dbFiles = db.GetFiles();
                     FolderService.ShowFilesFromDb(filesView, dbFiles);
                     UpdateStatus();
 
-                    await StartScanAsync(selectedPath, scanMode, fileTypes);
+                    await StartScanAsync(this.selectedPath,fileTypes);
                 }
             }
         }
 
-        private async Task StartScanAsync(string folder, string scanMode, List<string> fileTypes)
+        private async Task StartScanAsync(string folder, List<string> fileTypes)
         {
 
             var files = db.GetFiles($"Path LIKE '{folder.Replace("'", "''")}%'");
@@ -258,83 +253,88 @@ namespace FileScannerApp
                 files = files.Where(f => fileTypes.Contains(f.Extension.ToLower())).ToList();
             }
 
-
             if (files.Count == 0)
             {
-                MessageBox.Show("Brak plików do skanowania!");
+                MessageBox.Show("No files for scan!");
                 return;
             }
 
+
             int scanId = db.CreateScan(folder, files.Count);
             int threatsFound = 0;
-
-            toolStripStatusLabel3.Text = "Skanowanie w toku...";
-            toolStripStatusLabel4.Text = "";
 
             toolStripProgressBar1.Visible = true;
             toolStripProgressBar1.Minimum = 0;
             toolStripProgressBar1.Maximum = files.Count;
             toolStripProgressBar1.Value = 0;
-
-            toolStripStatusLabel3.Text = "Skanowanie...";
+            toolStripStatusLabel3.Text = "Scanning...";
             toolStripStatusLabel4.Text = "";
 
             for (int i = 0; i < files.Count; i++)
             {
                 var file = files[i];
+                string status = "Completed";
+                string json = "";
+
+                if (!File.Exists(file.Path))
+                {
+                    Console.WriteLine($"Missing: {file.Path}");
+                    continue;
+                }
 
                 try
                 {
-                    string json = await scanService.ScanFileAsync(file.Path,scanMode);
+                    
+                    string fileHash = scanService.CalculateSHA256(file.Path);
 
-                    var doc = JsonDocument.Parse(json);
+                    json = await scanService.GetFileReportAsync(fileHash);
 
-                    int malicious = doc
-                        .RootElement
-                        .GetProperty("data")
-                        .GetProperty("attributes")
-                        .GetProperty("last_analysis_stats")
-                        .GetProperty("malicious")
-                        .GetInt32();
+                    if (string.IsNullOrEmpty(json))
+                    {
+                        status = "Unknown";
+                    }
+                    else
+                    {
+                        var doc = JsonDocument.Parse(json);
 
-                    if (malicious > 0)
-                        threatsFound++;
+                        var stats = doc.RootElement
+                            .GetProperty("data")
+                            .GetProperty("attributes")
+                            .GetProperty("last_analysis_stats");
 
-                    db.SaveScanResult(scanId, file.Name, "Completed", json);
+                        int malicious = stats.GetProperty("malicious").GetInt32();
+
+                        if (malicious > 0)
+                        {
+                            status = "Malicious";
+                            threatsFound++;
+                        }
+                    }
+
+                    db.SaveScanResult(scanId, file.Name, status, json);
                 }
                 catch (Exception ex)
                 {
                     db.SaveScanResult(scanId, file.Name, "Error", ex.Message);
                 }
 
-                
-                toolStripProgressBar1.Value = i + 1;
-                toolStripStatusLabel3.Text = $"Skanowanie: {i + 1}/{files.Count}";
-                toolStripStatusLabel4.Text = file.Name;
+                await Task.Delay(15000);
 
-                
+                toolStripProgressBar1.Value = i + 1;
+                toolStripStatusLabel3.Text = $"Scanning: {i + 1}/{files.Count}";
+                toolStripStatusLabel4.Text = file.Name;
             }
 
             db.UpdateScanResults(scanId, threatsFound, "Completed");
 
-            toolStripProgressBar1.Value = toolStripProgressBar1.Maximum;
-            toolStripStatusLabel3.Text = "Skan zakończony";
+            toolStripProgressBar1.Visible = false;
+            toolStripStatusLabel3.Text = "Scan completed";
+            toolStripStatusLabel4.Text = "";
 
-            var result = MessageBox.Show($"Znaleziono {threatsFound} zagrożeń","Skan zakończony",MessageBoxButtons.OK);
+            MessageBox.Show($"Found {threatsFound} threats", "Scan completed");
 
-            if (result == DialogResult.OK)
-            {
-                toolStripProgressBar1.Visible = false;
-                toolStripStatusLabel3.Text = "";
-                toolStripStatusLabel4.Text = "";
-
-                var resultsForm = new ScanResultsForm(scanId);
-                resultsForm.Show();
-            }
-
+            new ScanResultsForm(scanId).Show();
         }
-
-
 
         private void UpdateStatus()
         {

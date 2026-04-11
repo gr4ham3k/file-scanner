@@ -25,6 +25,12 @@ namespace FileScannerApp
 
             foreach (var file in files)
             {
+                if (!File.Exists(file.Path))
+                {
+                    Console.WriteLine($"Missing: {file.Path}");
+                    continue;
+                }
+                    
                 string extension = file.Extension.ToLower();
 
                 bool filterEnabled = fileTypes != null && fileTypes.Count > 0;
@@ -50,16 +56,24 @@ namespace FileScannerApp
 
                 targetPath = ResolveConflict(fileName, fileExt, targetPath, overwriteExisting, targetFolder);
 
-                if (operation == "move")
+                try
                 {
-                    if (File.Exists(targetPath))
-                        File.Delete(targetPath);
+                    if (operation == "move")
+                    {
+                        if (File.Exists(targetPath))
+                            File.Delete(targetPath);
 
-                    File.Move(file.Path, targetPath);
+                        File.Move(file.Path, targetPath);
+                    }
+                    else
+                    {
+                        File.Copy(file.Path, targetPath, overwriteExisting);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    File.Copy(file.Path, targetPath,overwriteExisting);
+                    Console.WriteLine(ex.Message);
+                    continue;
                 }
             }
 
