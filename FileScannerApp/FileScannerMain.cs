@@ -33,6 +33,7 @@ namespace FileScannerApp
         {
             var dbFiles = db.GetFiles();
             FolderService.ShowFilesFromDb(filesView, dbFiles);
+
             UpdateStatus();
         }
 
@@ -377,6 +378,41 @@ namespace FileScannerApp
         {
             var form = new RenameForm(selectedPath);
             form.Show();
+        }
+
+        private void toolStripRefreshButton_Click(object sender, EventArgs e)
+        { 
+            if(selectedPath != null)
+            {
+                var files = FileScannerService.Scan(selectedPath);
+                db.SaveFiles(files);
+
+                var showFiles = db.GetFiles();
+
+                FolderService.ShowFilesFromDb(filesView, showFiles);
+                UpdateStatus();
+            }
+            else
+            {
+                using (FolderBrowserDialog dialog = new FolderBrowserDialog())
+                {
+                    if (dialog.ShowDialog() == DialogResult.OK)
+                    {
+                        var files = FileScannerService.Scan(dialog.SelectedPath);
+
+                        selectedPath = dialog.SelectedPath;
+
+                        this.db.SaveFiles(files);
+
+                        var dbFiles = db.GetFiles();
+                        FolderService.ShowFilesFromDb(filesView, dbFiles);
+
+                        UpdateStatus();
+                    }
+                }
+            }
+
+            
         }
     }
 }

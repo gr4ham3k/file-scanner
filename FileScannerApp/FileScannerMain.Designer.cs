@@ -60,6 +60,7 @@
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.renameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripRefreshButton = new System.Windows.Forms.ToolStripButton();
             this.previewPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.axWindowsMediaPlayer1)).BeginInit();
             this.toolStrip1.SuspendLayout();
@@ -137,6 +138,7 @@
             // 
             // toolStrip1
             // 
+            this.toolStrip1.AutoSize = false;
             this.toolStrip1.Dock = System.Windows.Forms.DockStyle.None;
             this.toolStrip1.GripStyle = System.Windows.Forms.ToolStripGripStyle.Hidden;
             this.toolStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
@@ -146,10 +148,11 @@
             this.toolStripImagesBtn,
             this.toolStripDocumentsBtn,
             this.toolStripMusicBtn,
-            this.toolStripVideosBtn});
+            this.toolStripVideosBtn,
+            this.toolStripRefreshButton});
             this.toolStrip1.Location = new System.Drawing.Point(12, 120);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(434, 27);
+            this.toolStrip1.Size = new System.Drawing.Size(671, 37);
             this.toolStrip1.TabIndex = 10;
             this.toolStrip1.Text = "toolStrip1";
             // 
@@ -357,6 +360,17 @@
             this.deleteToolStripMenuItem.Text = "Delete";
             this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
+            // toolStripRefreshButton
+            // 
+            this.toolStripRefreshButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripRefreshButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripRefreshButton.Image = ((System.Drawing.Image)(resources.GetObject("toolStripRefreshButton.Image")));
+            this.toolStripRefreshButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripRefreshButton.Margin = new System.Windows.Forms.Padding(12, 1, 1, 2);
+            this.toolStripRefreshButton.Name = "toolStripRefreshButton";
+            this.toolStripRefreshButton.Size = new System.Drawing.Size(29, 34);
+            this.toolStripRefreshButton.Click += new System.EventHandler(this.toolStripRefreshButton_Click);
+            // 
             // FileScannerMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
@@ -416,6 +430,7 @@
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel3;
         private System.Windows.Forms.ToolStripProgressBar toolStripProgressBar1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel4;
+        private System.Windows.Forms.ToolStripButton toolStripRefreshButton;
     }
 }
 
