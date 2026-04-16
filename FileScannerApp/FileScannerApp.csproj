@@ -131,6 +131,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Database\Database.cs" />
+    <Compile Include="Models\RenamePreview.cs" />
     <Compile Include="RenameForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -176,6 +177,7 @@
     <Compile Include="Services\PreviewService.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\RenameService.cs" />
     <Compile Include="Services\ScannerService.cs" />
     <EmbeddedResource Include="FileScannerMain.resx">
       <DependentUpon>FileScannerMain.cs</DependentUpon>

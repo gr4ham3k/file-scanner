@@ -377,7 +377,10 @@ namespace FileScannerApp
         private void renameBtn_Click(object sender, EventArgs e)
         {
             var form = new RenameForm(selectedPath);
-            form.Show();
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                selectedPath = form.SelectedFolder;
+            }
         }
 
         private void toolStripRefreshButton_Click(object sender, EventArgs e)

@@ -92,5 +92,6 @@ namespace FileScannerApp
         {
             this.Close();
         }
+
     }
 }

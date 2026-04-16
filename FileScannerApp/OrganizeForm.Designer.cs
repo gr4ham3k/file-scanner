@@ -223,6 +223,7 @@
             this.Controls.Add(this.changeFolderBtn);
             this.Controls.Add(this.textBoxFolder);
             this.Controls.Add(this.label1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Name = "OrganizeForm";
             this.Text = "OrganizeForm";
             this.ResumeLayout(false);

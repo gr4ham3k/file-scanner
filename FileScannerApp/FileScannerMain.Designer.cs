@@ -45,6 +45,7 @@
             this.toolStripDocumentsBtn = new System.Windows.Forms.ToolStripButton();
             this.toolStripMusicBtn = new System.Windows.Forms.ToolStripButton();
             this.toolStripVideosBtn = new System.Windows.Forms.ToolStripButton();
+            this.toolStripRefreshButton = new System.Windows.Forms.ToolStripButton();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
@@ -60,7 +61,6 @@
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.renameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripRefreshButton = new System.Windows.Forms.ToolStripButton();
             this.previewPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.axWindowsMediaPlayer1)).BeginInit();
             this.toolStrip1.SuspendLayout();
@@ -159,7 +159,7 @@
             // toolStripLabel1
             // 
             this.toolStripLabel1.Name = "toolStripLabel1";
-            this.toolStripLabel1.Size = new System.Drawing.Size(51, 24);
+            this.toolStripLabel1.Size = new System.Drawing.Size(51, 34);
             this.toolStripLabel1.Text = "Filters:";
             // 
             // toolStripAllFilesBtn
@@ -169,7 +169,7 @@
             this.toolStripAllFilesBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripAllFilesBtn.Margin = new System.Windows.Forms.Padding(12, 1, 0, 2);
             this.toolStripAllFilesBtn.Name = "toolStripAllFilesBtn";
-            this.toolStripAllFilesBtn.Size = new System.Drawing.Size(62, 24);
+            this.toolStripAllFilesBtn.Size = new System.Drawing.Size(62, 34);
             this.toolStripAllFilesBtn.Text = "All files";
             this.toolStripAllFilesBtn.Click += new System.EventHandler(this.Filter_Click);
             // 
@@ -180,7 +180,7 @@
             this.toolStripImagesBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripImagesBtn.Margin = new System.Windows.Forms.Padding(12, 1, 0, 2);
             this.toolStripImagesBtn.Name = "toolStripImagesBtn";
-            this.toolStripImagesBtn.Size = new System.Drawing.Size(61, 24);
+            this.toolStripImagesBtn.Size = new System.Drawing.Size(61, 34);
             this.toolStripImagesBtn.Text = "Images";
             this.toolStripImagesBtn.Click += new System.EventHandler(this.Filter_Click);
             // 
@@ -191,7 +191,7 @@
             this.toolStripDocumentsBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripDocumentsBtn.Margin = new System.Windows.Forms.Padding(12, 1, 0, 2);
             this.toolStripDocumentsBtn.Name = "toolStripDocumentsBtn";
-            this.toolStripDocumentsBtn.Size = new System.Drawing.Size(88, 24);
+            this.toolStripDocumentsBtn.Size = new System.Drawing.Size(88, 34);
             this.toolStripDocumentsBtn.Text = "Documents";
             this.toolStripDocumentsBtn.Click += new System.EventHandler(this.Filter_Click);
             // 
@@ -202,7 +202,7 @@
             this.toolStripMusicBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripMusicBtn.Margin = new System.Windows.Forms.Padding(12, 1, 0, 2);
             this.toolStripMusicBtn.Name = "toolStripMusicBtn";
-            this.toolStripMusicBtn.Size = new System.Drawing.Size(51, 24);
+            this.toolStripMusicBtn.Size = new System.Drawing.Size(51, 34);
             this.toolStripMusicBtn.Text = "Music";
             this.toolStripMusicBtn.Click += new System.EventHandler(this.Filter_Click);
             // 
@@ -213,9 +213,20 @@
             this.toolStripVideosBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripVideosBtn.Margin = new System.Windows.Forms.Padding(12, 1, 0, 2);
             this.toolStripVideosBtn.Name = "toolStripVideosBtn";
-            this.toolStripVideosBtn.Size = new System.Drawing.Size(58, 24);
+            this.toolStripVideosBtn.Size = new System.Drawing.Size(58, 34);
             this.toolStripVideosBtn.Text = "Videos";
             this.toolStripVideosBtn.Click += new System.EventHandler(this.Filter_Click);
+            // 
+            // toolStripRefreshButton
+            // 
+            this.toolStripRefreshButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
+            this.toolStripRefreshButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.toolStripRefreshButton.Image = ((System.Drawing.Image)(resources.GetObject("toolStripRefreshButton.Image")));
+            this.toolStripRefreshButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripRefreshButton.Margin = new System.Windows.Forms.Padding(12, 1, 1, 2);
+            this.toolStripRefreshButton.Name = "toolStripRefreshButton";
+            this.toolStripRefreshButton.Size = new System.Drawing.Size(29, 34);
+            this.toolStripRefreshButton.Click += new System.EventHandler(this.toolStripRefreshButton_Click);
             // 
             // toolStripStatusLabel1
             // 
@@ -299,7 +310,7 @@
             this.scanBtn.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.scanBtn.Name = "scanBtn";
             this.scanBtn.Size = new System.Drawing.Size(120, 90);
-            this.scanBtn.Text = "Scan";
+            this.scanBtn.Text = "Scan Viruses";
             this.scanBtn.TextImageRelation = System.Windows.Forms.TextImageRelation.ImageAboveText;
             this.scanBtn.Click += new System.EventHandler(this.scanButtonClick);
             // 
@@ -360,17 +371,6 @@
             this.deleteToolStripMenuItem.Text = "Delete";
             this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
-            // toolStripRefreshButton
-            // 
-            this.toolStripRefreshButton.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.toolStripRefreshButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripRefreshButton.Image = ((System.Drawing.Image)(resources.GetObject("toolStripRefreshButton.Image")));
-            this.toolStripRefreshButton.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripRefreshButton.Margin = new System.Windows.Forms.Padding(12, 1, 1, 2);
-            this.toolStripRefreshButton.Name = "toolStripRefreshButton";
-            this.toolStripRefreshButton.Size = new System.Drawing.Size(29, 34);
-            this.toolStripRefreshButton.Click += new System.EventHandler(this.toolStripRefreshButton_Click);
-            // 
             // FileScannerMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
@@ -381,7 +381,10 @@
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.previewPanel);
             this.Controls.Add(this.filesView);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
             this.Name = "FileScannerMain";
+            this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
             this.Text = "File Scanner";
             this.Load += new System.EventHandler(this.FileScannerMain_Load);
             this.previewPanel.ResumeLayout(false);

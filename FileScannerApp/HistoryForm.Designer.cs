@@ -68,6 +68,7 @@
             this.Controls.Add(this.treeView1);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.label1);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Name = "HistoryForm";
             this.Text = "HistoryForm";
             this.Load += new System.EventHandler(this.HistoryForm_Load);
