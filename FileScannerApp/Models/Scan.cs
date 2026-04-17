@@ -8,12 +8,12 @@ namespace FileScannerApp.Models
 {
     public class Scan
     {
-        private int Id {  get; set; }
-        private DateTime ScanDate { get; set; }
-        private string ScanPath { get; set; }
-        private int FilesCount { get; set; }
-        private int ThreatsFound {  get; set; }
-        private string Status { get; set; }
+        public int Id {  get; set; }
+        public DateTime ScanDate { get; set; }
+        public string ScanPath { get; set; }
+        public int FilesCount { get; set; }
+        public int ThreatsFound {  get; set; }
+        public string Status { get; set; }
 
     }
 }

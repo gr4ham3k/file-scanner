@@ -19,45 +19,62 @@ public static class PreviewService
 
         if (new[] { ".jpg", ".png", ".bmp", ".gif" }.Contains(ext))
         {
-            PictureBox pb = new PictureBox();
-            pb.Dock = DockStyle.Fill;
-            pb.SizeMode = PictureBoxSizeMode.Zoom;
-            pb.Image = Image.FromFile(filePath);
+            var pb = new PictureBox
+            {
+                Dock = DockStyle.Fill,
+                SizeMode = PictureBoxSizeMode.Zoom
+            };
+
+            byte[] bytes = File.ReadAllBytes(filePath);
+            var ms = new MemoryStream(bytes);
+
+            pb.Image = Image.FromStream(ms);
+            pb.Tag = ms;
+
             previewPanel.Controls.Add(pb);
         }
         else if (ext == ".txt")
         {
-            RichTextBox rtb = new RichTextBox();
-            rtb.Dock = DockStyle.Fill;
-            rtb.ReadOnly = true;
-            rtb.Text = File.ReadAllText(filePath);
+            var rtb = new RichTextBox
+            {
+                Dock = DockStyle.Fill,
+                ReadOnly = true,
+                Text = File.ReadAllText(filePath)
+            };
+
             previewPanel.Controls.Add(rtb);
         }
         else if (new[] { ".mp3", ".wav", ".mp4" }.Contains(ext))
         {
             var player = new AxWMPLib.AxWindowsMediaPlayer();
-            previewPanel.Controls.Add(player);
             player.Dock = DockStyle.Fill;
             player.CreateControl();
-            player.BeginInit();
             player.URL = filePath;
-            player.EndInit();
+
+            previewPanel.Controls.Add(player);
         }
         else if (ext == ".pdf")
         {
             var pdfViewer = new PdfViewer();
             pdfViewer.Dock = DockStyle.Fill;
-            pdfViewer.Document = PdfDocument.Load(filePath);
+
+            byte[] bytes = File.ReadAllBytes(filePath);
+            var ms = new MemoryStream(bytes);
+
+            pdfViewer.Document = PdfDocument.Load(ms);
+
             previewPanel.Controls.Add(pdfViewer);
         }
         else
         {
-            Label lbl = new Label();
-            lbl.Dock = DockStyle.Fill;
-            lbl.Text = "Podgląd tego typu pliku nie jest obsługiwany.";
-            lbl.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            var lbl = new Label
+            {
+                Dock = DockStyle.Fill,
+                Text = "Preview not supported.",
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
             previewPanel.Controls.Add(lbl);
         }
     }
-
 }

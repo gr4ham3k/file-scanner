@@ -66,7 +66,7 @@ namespace FileScannerApp
 
                 string query = "SELECT * FROM Files";
 
-                if(!string.IsNullOrEmpty(filterQuery))
+                if (!string.IsNullOrEmpty(filterQuery))
                 {
                     query += " WHERE " + filterQuery;
                 }
@@ -302,6 +302,98 @@ namespace FileScannerApp
 
             return scans;
         }
+
+        public void AddOperationLog(OperationLog log)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
+            {
+                connection.Open();
+
+                var cmd = new SQLiteCommand(@"
+                    INSERT INTO OperationsLog
+                    (OperationType, FileName, OldPath, NewPath, OperationDate, CanUndo)
+                    VALUES
+                    (@type, @fileName, @oldPath, @newPath, @date, @canUndo);
+                ", connection);
+
+                cmd.Parameters.AddWithValue("@type", log.OperationType.ToString());
+                cmd.Parameters.AddWithValue("@fileName", log.FileName);
+
+                cmd.Parameters.AddWithValue("@oldPath",
+                    (object)log.OldPath ?? DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@newPath",
+                    (object)log.NewPath ?? DBNull.Value);
+
+                cmd.Parameters.AddWithValue("@date",
+                    log.OperationDate.ToString("yyyy-MM-dd HH:mm:ss"));
+
+                cmd.Parameters.AddWithValue("@canUndo",
+                    log.CanUndo ? 1 : 0);
+
+                cmd.ExecuteNonQuery();
+            }
+        }
+
+
+
+
+        public List<OperationLog> GetOperationsLog()
+        {
+            var logs = new List<OperationLog>();
+
+            using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
+            {
+                connection.Open();
+
+                string query = @"
+                    SELECT Id, OperationType, FileName, OldPath, NewPath, OperationDate, CanUndo
+                    FROM OperationsLog
+                    ORDER BY OperationDate DESC, Id DESC;
+                ";
+
+                using (var cmd = new SQLiteCommand(query, connection))
+                using (var reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        logs.Add(new OperationLog
+                        {
+                            Id = reader.GetInt32(0),
+
+                            OperationType = (OperationType)Enum.Parse(typeof(OperationType), reader.GetString(1)),
+
+                            FileName = reader.IsDBNull(2) ? null : reader.GetString(2),
+                            OldPath = reader.IsDBNull(3) ? null : reader.GetString(3),
+                            NewPath = reader.IsDBNull(4) ? null : reader.GetString(4),
+
+                            OperationDate = DateTime.Parse(reader.GetString(5)),
+
+                            CanUndo = reader.GetInt32(6) == 1
+                        });
+                    }
+                }
+            }
+
+            return logs;
+        }
+
+        public void DeleteOperationLog(int id)
+        {
+            using (var connection = new SQLiteConnection($"Data Source={this.dbPath}"))
+            {
+                connection.Open();
+
+                var cmd = new SQLiteCommand(@"
+                    DELETE FROM OperationsLog
+                    WHERE Id = @id;
+                ", connection);
+
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.ExecuteNonQuery();
+            }
+        }
+
 
     }
 }

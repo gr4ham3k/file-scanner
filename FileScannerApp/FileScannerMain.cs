@@ -1,7 +1,9 @@
 ﻿using FileScannerApp;
+using FileScannerApp.Models;
 using FileScannerApp.Services;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -31,10 +33,7 @@ namespace FileScannerApp
 
         private void FileScannerMain_Load(object sender, EventArgs e)
         {
-            var dbFiles = db.GetFiles();
-            FolderService.ShowFilesFromDb(filesView, dbFiles);
 
-            UpdateStatus();
         }
 
         private void filesView_SelectedIndexChanged(object sender, EventArgs e)
@@ -97,8 +96,8 @@ namespace FileScannerApp
                 return;
 
             var result = MessageBox.Show(
-                $"Na pewno chcesz usunąć {filesView.SelectedItems.Count} plik(ów)?",
-                "Potwierdzenie usunięcia",
+                $"Are you sure you want to delete {filesView.SelectedItems.Count} file(s)?",
+                "Confirm delete",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning
             );
@@ -106,7 +105,12 @@ namespace FileScannerApp
             if (result != DialogResult.Yes)
                 return;
 
-            foreach (ListViewItem item in filesView.SelectedItems)
+            var itemsToDelete = filesView.SelectedItems.Cast<ListViewItem>().ToList();
+
+            int deletedCount = 0;
+            int failedCount = 0;
+
+            foreach (var item in itemsToDelete)
             {
                 string path = item.Tag.ToString();
 
@@ -116,16 +120,42 @@ namespace FileScannerApp
                     {
                         File.Delete(path);
                     }
+
+                    db.DeleteFile(path);
+
+                    db.AddOperationLog(new OperationLog
+                    {
+                        OperationType = OperationType.Delete,
+                        FileName = Path.GetFileName(path),
+                        OldPath = path,
+                        NewPath = null,
+                        OperationDate = DateTime.Now,
+                        CanUndo = false
+                    });
+
+                    filesView.Items.Remove(item);
+                    deletedCount++;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Błąd usuwania pliku: " + ex.Message);
-                }
+                    failedCount++;
 
-                db.DeleteFile(path);
-                filesView.Items.Remove(item);
+                    MessageBox.Show(
+                        $"Error deleting file:\n{path}\n\n{ex.Message}",
+                        "Delete error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
             }
+
             UpdateStatus();
+
+            MessageBox.Show(
+                $"Delete completed.\n\nDeleted: {deletedCount}\nFailed: {failedCount}",
+                "Delete",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
         }
 
         private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
@@ -135,6 +165,8 @@ namespace FileScannerApp
             renameToolStripMenuItem.Enabled = selectedCount == 1;
 
             deleteToolStripMenuItem.Enabled = selectedCount > 0;
+
+            moveToolStripMenuItem.Enabled = selectedCount > 0;
         }
 
         private void renameToolStripMenuItem_Click(object sender, EventArgs e)
@@ -149,6 +181,87 @@ namespace FileScannerApp
 
         }
 
+        private void moveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (filesView.SelectedItems.Count == 0)
+            {
+                MessageBox.Show("No files selected.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var dialog = new FolderBrowserDialog())
+            {
+                if (dialog.ShowDialog() != DialogResult.OK)
+                    return;
+
+                string targetFolder = dialog.SelectedPath;
+
+                int movedCount = 0;
+                int skippedCount = 0;
+
+                foreach (ListViewItem item in filesView.SelectedItems)
+                {
+                    string oldPath = item.Tag.ToString();
+                    string fileName = Path.GetFileName(oldPath);
+                    string newPath = Path.Combine(targetFolder, fileName);
+
+                    try
+                    {
+                        if (!File.Exists(oldPath))
+                        {
+                            skippedCount++;
+                            continue;
+                        }
+
+                        if (File.Exists(newPath))
+                        {
+                            skippedCount++;
+                            continue;
+                        }
+
+                        File.Move(oldPath, newPath);
+
+                        db.UpdateFilePath(oldPath, newPath);
+
+                        db.AddOperationLog(new OperationLog
+                        {
+                            OperationType = OperationType.Move,
+                            FileName = fileName,
+                            OldPath = oldPath,
+                            NewPath = newPath,
+                            OperationDate = DateTime.Now,
+                            CanUndo = true
+                        });
+
+                        item.Tag = newPath;
+
+                        if (item.SubItems.Count > 3)
+                            item.SubItems[3].Text = newPath;
+
+                        movedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(
+                            $"Error moving file:\n{fileName}\n\n{ex.Message}",
+                            "Move Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                }
+
+                MessageBox.Show(
+                    $"Move completed.\n\nMoved: {movedCount}\nSkipped: {skippedCount}",
+                    "Move",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information
+                );
+
+
+                UpdateStatus();
+            }
+        }
+
         private void filesView_AfterLabelEdit(object sender, LabelEditEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(e.Label))
@@ -158,14 +271,30 @@ namespace FileScannerApp
             }
 
             var item = filesView.Items[e.Item];
+
             string oldPath = item.Tag.ToString();
             string directory = Path.GetDirectoryName(oldPath);
+            string extension = Path.GetExtension(oldPath);
+
             string newName = e.Label;
+
+            if (!newName.EndsWith(extension))
+            {
+                newName += extension;
+            }
+
             string newPath = Path.Combine(directory, newName);
+
+            if (!File.Exists(oldPath))
+            {
+                MessageBox.Show("File does not exist.");
+                e.CancelEdit = true;
+                return;
+            }
 
             if (File.Exists(newPath))
             {
-                MessageBox.Show("Plik o takiej nazwie już istnieje!");
+                MessageBox.Show("A file with this name already exists!");
                 e.CancelEdit = true;
                 return;
             }
@@ -173,14 +302,25 @@ namespace FileScannerApp
             try
             {
                 File.Move(oldPath, newPath);
+
                 db.UpdateFilePath(oldPath, newPath);
 
-                item.Tag = newPath; 
-                item.SubItems[3].Text = newPath; 
+                db.AddOperationLog(new OperationLog
+                {
+                    OperationType = OperationType.Rename,
+                    FileName = newName,
+                    OldPath = oldPath,
+                    NewPath = newPath,
+                    OperationDate = DateTime.Now,
+                    CanUndo = true
+                });
+
+                item.Tag = newPath;
+                item.SubItems[3].Text = newPath;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Błąd zmiany nazwy: " + ex.Message);
+                MessageBox.Show("Rename error: " + ex.Message);
                 e.CancelEdit = true;
             }
         }
@@ -247,7 +387,7 @@ namespace FileScannerApp
         private async Task StartScanAsync(string folder, List<string> fileTypes)
         {
 
-            var files = db.GetFiles($"Path LIKE '{folder.Replace("'", "''")}%'");
+            var files = db.GetFiles($"Path LIKE '{folder}%'");
 
             if (fileTypes != null && fileTypes.Count > 0)
             {
@@ -368,7 +508,7 @@ namespace FileScannerApp
                     form.Options[1]
                 );
 
-                MessageBox.Show("Pliki zostały pomyślnie zorganizowane!", "Sukces", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Files organized!", "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 System.Diagnostics.Process.Start("explorer.exe", form.SelectedDestination);
 
             }
@@ -417,5 +557,7 @@ namespace FileScannerApp
 
             
         }
+
+
     }
 }
