@@ -1,12 +1,17 @@
-﻿using System;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using FileScannerApp.Models;
+using OpenXmlPowerTools.Commands;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Windows.Forms;
 
 namespace FileScannerApp
 {
     public static class Organizer
     {
         public static string OrganizeFiles(
+            List<FileData> files,
             string sourceFolder,
             string destinationFolder,
             List<string> fileTypes,
@@ -14,20 +19,18 @@ namespace FileScannerApp
             bool createSubfolders,
             bool overwriteExisting)
         {
+
             if (!Directory.Exists(sourceFolder))
                 throw new DirectoryNotFoundException("Folder źródłowy nie istnieje.");
 
             if (!Directory.Exists(destinationFolder))
                 Directory.CreateDirectory(destinationFolder);
 
-            var db = new Database();
-            var files = db.GetFiles();
 
             foreach (var file in files)
             {
                 if (!File.Exists(file.Path))
                 {
-                    Console.WriteLine($"Missing: {file.Path}");
                     continue;
                 }
                     

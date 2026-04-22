@@ -16,19 +16,12 @@ namespace FileScannerApp
 {
     public partial class FileScannerMain : Form
     {
-        private Database db;
-        private string apiKey;
         private ScanService scanService;
+        private List<FileData> currentFiles = new List<FileData>();
         private string selectedPath;
         public FileScannerMain()
         {
             InitializeComponent();
-
-            db = new Database();
-            apiKey = Environment.GetEnvironmentVariable("VIRUSTOTAL_API_KEY");
-            scanService = new ScanService(apiKey);
-
-
         }
 
         private void FileScannerMain_Load(object sender, EventArgs e)
@@ -57,14 +50,12 @@ namespace FileScannerApp
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    var files = FileScannerService.Scan(dialog.SelectedPath);
+                    var fileInfos = FileScannerService.Scan(dialog.SelectedPath);
+                    var files = FileScannerService.Map(fileInfos);
 
                     selectedPath = dialog.SelectedPath;
-                    
-                    this.db.SaveFiles(files);
 
-                    var dbFiles = db.GetFiles();
-                    FolderService.ShowFilesFromDb(filesView, dbFiles);
+                    FolderService.ShowFiles(filesView,files);
 
                     UpdateStatus();
                 }
@@ -90,8 +81,10 @@ namespace FileScannerApp
             }
         }
 
+        
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            /*
             if (filesView.SelectedItems.Count == 0)
                 return;
 
@@ -120,8 +113,6 @@ namespace FileScannerApp
                     {
                         File.Delete(path);
                     }
-
-                    db.DeleteFile(path);
 
                     db.AddOperationLog(new OperationLog
                     {
@@ -156,7 +147,9 @@ namespace FileScannerApp
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information
             );
+            */
         }
+
 
         private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
@@ -181,8 +174,11 @@ namespace FileScannerApp
 
         }
 
+        
+
         private void moveToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            /*
             if (filesView.SelectedItems.Count == 0)
             {
                 MessageBox.Show("No files selected.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -260,10 +256,12 @@ namespace FileScannerApp
 
                 UpdateStatus();
             }
+            */
         }
 
         private void filesView_AfterLabelEdit(object sender, LabelEditEventArgs e)
         {
+            /*
             if (string.IsNullOrWhiteSpace(e.Label))
             {
                 e.CancelEdit = true;
@@ -323,49 +321,58 @@ namespace FileScannerApp
                 MessageBox.Show("Rename error: " + ex.Message);
                 e.CancelEdit = true;
             }
+             */
         }
+
+
 
         private void Filter_Click(object sender, EventArgs e)
         {
             var button = sender as ToolStripButton;
-            var dbFiles = db.GetFiles();
+
+            List<FileData> filtered;
 
             switch (button.Name)
             {
                 case "toolStripMusicBtn":
-                    dbFiles = db.GetFiles("Extension IN ('.mp3', '.wav')");
-                    FolderService.ShowFilesFromDb(filesView, dbFiles);
-                    UpdateStatus();
+                    filtered = currentFiles
+                        .Where(f => f.Extension == ".mp3" || f.Extension == ".wav")
+                        .ToList();
                     break;
 
                 case "toolStripImagesBtn":
-                    dbFiles = db.GetFiles("Extension IN ('.jpg', '.png')");
-                    FolderService.ShowFilesFromDb(filesView, dbFiles);
-                    UpdateStatus();
+                    filtered = currentFiles
+                        .Where(f => f.Extension == ".jpg" || f.Extension == ".png")
+                        .ToList();
                     break;
 
                 case "toolStripDocumentsBtn":
-                    dbFiles = db.GetFiles("Extension IN ('.pdf', '.docx', '.txt')");
-                    FolderService.ShowFilesFromDb(filesView, dbFiles);
-                    UpdateStatus();
+                    filtered = currentFiles
+                        .Where(f => f.Extension == ".pdf"
+                                 || f.Extension == ".docx"
+                                 || f.Extension == ".txt")
+                        .ToList();
                     break;
 
                 case "toolStripVideosBtn":
-                    dbFiles = db.GetFiles("Extension IN ('.mp4')");
-                    FolderService.ShowFilesFromDb(filesView, dbFiles);
-                    UpdateStatus();
+                    filtered = currentFiles
+                        .Where(f => f.Extension == ".mp4")
+                        .ToList();
                     break;
 
                 default:
-                    dbFiles = db.GetFiles();
-                    FolderService.ShowFilesFromDb(filesView, dbFiles);
-                    UpdateStatus();
+                    filtered = currentFiles;
                     break;
             }
+
+            FolderService.ShowFiles(filesView, filtered);
+            UpdateStatus();
         }
 
+        
         private async void scanButtonClick(object sender, EventArgs e)
         {
+            /*
 
             using (var scanForm = new ScanOptionsForm(selectedPath))
             {
@@ -375,15 +382,19 @@ namespace FileScannerApp
 
                     var fileTypes = scanForm.FileTypes;
 
-                    var dbFiles = db.GetFiles();
-                    FolderService.ShowFilesFromDb(filesView, dbFiles);
+                    var fileInfos = FileScannerService.Scan(selectedPath);
+                    var files = FileScannerService.Map(fileInfos);
                     UpdateStatus();
 
                     await StartScanAsync(this.selectedPath,fileTypes);
                 }
             }
+            */
         }
 
+
+
+        /*
         private async Task StartScanAsync(string folder, List<string> fileTypes)
         {
 
@@ -425,7 +436,7 @@ namespace FileScannerApp
 
                 try
                 {
-                    
+
                     string fileHash = scanService.CalculateSHA256(file.Path);
 
                     json = await scanService.GetFileReportAsync(fileHash);
@@ -477,6 +488,8 @@ namespace FileScannerApp
             new ScanResultsForm(scanId).Show();
         }
 
+        */
+
         private void UpdateStatus()
         {
             int all = filesView.Items.Count;
@@ -499,13 +512,18 @@ namespace FileScannerApp
 
             if (form.ShowDialog() == DialogResult.OK)
             {
+                var fileInfos = FileScannerService.Scan(selectedPath);
+                var files = FileScannerService.Map(fileInfos);
+                
                 string path = Organizer.OrganizeFiles(
+                    files,
                     form.SelectedFolder,
                     form.SelectedDestination,
                     form.FileTypes,
                     form.Radio,
-                    form.Options[0],
-                    form.Options[1]
+                    form.Options.CreateSubfolders,
+                    form.Options.OverwriteExisting
+                    
                 );
 
                 MessageBox.Show("Files organized!", "Succes", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -527,12 +545,10 @@ namespace FileScannerApp
         { 
             if(selectedPath != null)
             {
-                var files = FileScannerService.Scan(selectedPath);
-                db.SaveFiles(files);
+                var fileInfos = FileScannerService.Scan(selectedPath);
+                var files = FileScannerService.Map(fileInfos);
 
-                var showFiles = db.GetFiles();
-
-                FolderService.ShowFilesFromDb(filesView, showFiles);
+                FolderService.ShowFiles(filesView, files);
                 UpdateStatus();
             }
             else
@@ -541,14 +557,12 @@ namespace FileScannerApp
                 {
                     if (dialog.ShowDialog() == DialogResult.OK)
                     {
-                        var files = FileScannerService.Scan(dialog.SelectedPath);
+                        var fileInfos = FileScannerService.Scan(dialog.SelectedPath);
+                        var files = FileScannerService.Map(fileInfos);
 
                         selectedPath = dialog.SelectedPath;
 
-                        this.db.SaveFiles(files);
-
-                        var dbFiles = db.GetFiles();
-                        FolderService.ShowFilesFromDb(filesView, dbFiles);
+                        FolderService.ShowFiles(filesView, files);
 
                         UpdateStatus();
                     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FileScannerApp.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,7 +9,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using FileScannerApp.Models;
 
 namespace FileScannerApp
 {
@@ -46,9 +46,7 @@ namespace FileScannerApp
                     textBoxFolder.Text = dialog.SelectedPath;
                     SelectedFolder = dialog.SelectedPath;
 
-                    var db = new Database();
-                    var files = FileScannerService.Scan(SelectedFolder);
-                    db.SaveFiles(files);
+                    FileScannerService.Scan(SelectedFolder);
                     LoadFiles();
                     
 
@@ -73,16 +71,9 @@ namespace FileScannerApp
 
         private void LoadFiles()
         {
-            var db = new Database();
-            var files = db.GetFiles();
 
-            var previewList = files.Select(f => new RenamePreview
-            {
-                NameBefore = f.Path,
-                NameAfter = ""
-            }).ToList();
 
-            dataGridView1.DataSource = previewList;
+            dataGridView1.DataSource = RenameService.LoadPreview(SelectedFolder);
 
             dataGridView1.Columns["NameBefore"].HeaderText = "Current";
             dataGridView1.Columns["NameAfter"].HeaderText = "After";

@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 public class FolderService
 {
-    public static void ShowFilesFromDb(ListView listView, List<FileData> files)
+    public static void ShowFiles(ListView listView,List<FileData> files)
     {
         listView.Items.Clear();
 
@@ -21,7 +21,7 @@ public class FolderService
             else
                 item.SubItems.Add((file.Size / 1024) + " KB");
 
-            item.SubItems.Add(file.ModifiedDate);
+            item.SubItems.Add((file.ModifiedDate).ToString());
             item.SubItems.Add(file.Path);
 
             listView.Items.Add(item);

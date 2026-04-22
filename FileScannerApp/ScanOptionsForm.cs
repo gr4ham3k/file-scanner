@@ -36,8 +36,8 @@ namespace FileScannerApp
                     textBoxFolder.Text = SelectedFolder;
 
                     var db = new Database();
-                    var files = FileScannerService.Scan(SelectedFolder);
-                    db.SaveFiles(files);
+                    var fileInfos = FileScannerService.Scan(SelectedFolder);
+                    var files = FileScannerService.Map(fileInfos);
 
                 }
             }

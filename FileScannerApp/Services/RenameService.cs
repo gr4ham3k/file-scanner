@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace FileScannerApp
 {
@@ -38,6 +39,17 @@ namespace FileScannerApp
             return newName + ext;
         }
 
+        public static List<RenamePreview> LoadPreview(string path)
+        {
+            var files = FileScannerService.Scan(path);
+
+            return files.Select(f => new RenamePreview
+            {
+                NameBefore = f.FullName,
+                NameAfter = ""
+            }).ToList();
+        }
+
         public static void RenameFiles(List<RenamePreview> files)
         {
             foreach (var item in files)
@@ -54,5 +66,6 @@ namespace FileScannerApp
                 File.Move(item.NameBefore, newPath);
             }
         }
+
     }
 }

@@ -1,11 +1,6 @@
-﻿using System;
+﻿using FileScannerApp.Models;
+using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace FileScannerApp
@@ -15,13 +10,15 @@ namespace FileScannerApp
         public string SelectedFolder { get; private set; }
         public string SelectedDestination { get; private set; }
         public string Radio { get; private set; }
-        public bool[] Options { get; private set; } = new bool[3];
+        public OrganizeOptions Options { get; private set; }
+
 
         public List<string> FileTypes { get; private set; } = new List<string>();
         public OrganizeForm(string folder)
         {
             InitializeComponent();
             this.SelectedFolder = folder;
+            this.Options = new OrganizeOptions();
             textBoxFolder.Text = SelectedFolder;
         }
 
@@ -34,9 +31,14 @@ namespace FileScannerApp
                     textBoxFolder.Text = dialog.SelectedPath;
                     SelectedFolder = dialog.SelectedPath;
 
-                    var db = new Database();
-                    var files = FileScannerService.Scan(SelectedFolder);
-                    db.SaveFiles(files);
+                    try
+                    {
+                        FileScannerService.Scan(SelectedFolder);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
                 }
             }
         }
@@ -83,6 +85,8 @@ namespace FileScannerApp
                 this.Radio = "move";
             }
 
+            this.Options = new OrganizeOptions();
+
             foreach (var item in checkedListBox1.CheckedItems)
             {
                 string group = item.ToString();
@@ -90,11 +94,11 @@ namespace FileScannerApp
                 switch (group)
                 {
                     case "Create subfolders by type":
-                        Options[0] = true;
+                        Options.CreateSubfolders = true;
                         break;
 
                     case "Overwrite existing files":
-                        Options[1] = true;
+                        Options.OverwriteExisting = true;
                         break;
                 }
             }
@@ -125,7 +129,7 @@ namespace FileScannerApp
 
             if (string.IsNullOrEmpty(textBoxFolder.Text) || string.IsNullOrEmpty(textBox1.Text))
             {
-                MessageBox.Show("Nie wybrano folderu!");
+                MessageBox.Show("No folder selected!");
                 return;
             }
 
