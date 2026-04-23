@@ -69,7 +69,7 @@
             this.changeFolderBtn.Image = ((System.Drawing.Image)(resources.GetObject("changeFolderBtn.Image")));
             this.changeFolderBtn.Location = new System.Drawing.Point(431, 94);
             this.changeFolderBtn.Name = "changeFolderBtn";
-            this.changeFolderBtn.Size = new System.Drawing.Size(25, 23);
+            this.changeFolderBtn.Size = new System.Drawing.Size(25, 22);
             this.changeFolderBtn.TabIndex = 10;
             this.changeFolderBtn.UseVisualStyleBackColor = true;
             this.changeFolderBtn.Click += new System.EventHandler(this.changeFolderBtn_Click);

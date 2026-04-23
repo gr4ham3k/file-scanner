@@ -1,13 +1,6 @@
 ﻿using FileScannerApp.Models;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace FileScannerApp
@@ -20,14 +13,19 @@ namespace FileScannerApp
         public RenameForm(string folder)
         {
             InitializeComponent();
-
-            if (folder != null)
-            {
-                LoadFiles();
-            }
             
             this.SelectedFolder = folder;
             textBoxFolder.Text = SelectedFolder;
+
+            if (SelectedFolder != null)
+            {
+                dataGridView1.Visible = true;
+                LoadFiles();
+            }
+            else
+            {
+                dataGridView1.Visible = false;
+            }
 
             textBoxPattern.TextChanged += (s, e) => UpdatePreview();
 
@@ -47,6 +45,7 @@ namespace FileScannerApp
                     SelectedFolder = dialog.SelectedPath;
 
                     FileScannerService.Scan(SelectedFolder);
+                    dataGridView1.Visible = true;
                     LoadFiles();
                     
 
@@ -89,6 +88,7 @@ namespace FileScannerApp
                 return;
 
             var list = dataGridView1.DataSource as List<RenamePreview>;
+            dataGridView1.Columns["FullPath"].Visible = false;
             if (list == null)
                 return;
 
@@ -143,28 +143,6 @@ namespace FileScannerApp
             {
                 MessageBox.Show(ex.Message);
             }
-        }
-        private void StyleGrid()
-        {
-            dataGridView1.BorderStyle = BorderStyle.None;
-            dataGridView1.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(245, 245, 245);
-            dataGridView1.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-            dataGridView1.DefaultCellStyle.SelectionBackColor = Color.FromArgb(0, 120, 215);
-            dataGridView1.DefaultCellStyle.SelectionForeColor = Color.White;
-            dataGridView1.BackgroundColor = Color.White;
-
-            dataGridView1.EnableHeadersVisualStyles = false;
-            dataGridView1.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            dataGridView1.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(30, 30, 30);
-            dataGridView1.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
-            dataGridView1.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
-
-            dataGridView1.DefaultCellStyle.Font = new Font("Segoe UI", 9);
-            dataGridView1.RowTemplate.Height = 28;
-
-            dataGridView1.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-
-
         }
 
         private void button3_Click(object sender, EventArgs e)

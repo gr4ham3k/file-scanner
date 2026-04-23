@@ -2,26 +2,89 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace FileScannerApp.Services
 {
-    using System.Net.Http;
-    using System.Security.Cryptography;
-    using System.Security.Policy;
-    using System.Text.Json;
-    using System.Threading.Tasks;
+
 
     public class ScanService
     {
         private readonly string apiKey;
         private static readonly HttpClient client = new HttpClient();
+        private readonly Database db;
 
-        public ScanService(string apiKey)
+        public ScanService(AppConfig appConfig, Database db)
         {
-            this.apiKey = apiKey;
+            this.apiKey = appConfig.VirusTotalApiKey;
+            this.db = db;
+        }
+
+        public int CreateScan(string folder, int count)
+        {
+            return db.CreateScan(folder, count);
+        }
+
+        public async Task<int> ScanFilesAsync(List<FileData> files, int scanId, Func<ScanProgress, Task> onProgress)
+        {
+            int threatsFound = 0;
+
+            for (int i = 0; i < files.Count; i++)
+            {
+                var file = files[i];
+                string status = "Completed";
+                string json = "";
+
+                try
+                {
+                    if (!File.Exists(file.Path))
+                        continue;
+
+                    string hash = CalculateSHA256(file.Path);
+                    json = await GetFileReportAsync(hash);
+
+                    if (!string.IsNullOrEmpty(json))
+                    {
+                        var doc = JsonDocument.Parse(json);
+
+                        int malicious = doc.RootElement
+                            .GetProperty("data")
+                            .GetProperty("attributes")
+                            .GetProperty("last_analysis_stats")
+                            .GetProperty("malicious")
+                            .GetInt32();
+
+                        if (malicious > 0)
+                        {
+                            status = "Malicious";
+                            threatsFound++;
+                        }
+                    }
+
+                    db.SaveScanResult(scanId, file.Name, status, json);
+                }
+                catch (Exception ex)
+                {
+                    db.SaveScanResult(scanId, file.Name, "Error", ex.Message);
+                }
+
+                await onProgress(new ScanProgress
+                {
+                    Current = i + 1,
+                    Total = files.Count,
+                    CurrentFile = file.Name,
+                    ThreatsFound = threatsFound
+                });
+
+                await Task.Delay(15000);
+            }
+
+            db.UpdateScanResults(scanId, threatsFound, "Completed");
+
+            return threatsFound;
         }
 
         public string CalculateSHA256(string filePath)

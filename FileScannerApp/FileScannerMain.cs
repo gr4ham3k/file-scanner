@@ -1,27 +1,27 @@
-﻿using FileScannerApp;
-using FileScannerApp.Models;
+﻿using FileScannerApp.Models;
 using FileScannerApp.Services;
 using System;
 using System.Collections.Generic;
-using System.Drawing.Drawing2D;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
+using System.Threading.Tasks;
 
 namespace FileScannerApp
 {
     public partial class FileScannerMain : Form
     {
         private ScanService scanService;
-        private List<FileData> currentFiles = new List<FileData>();
+        private FileOperationsService fileOperationsService;
+        private List<FileData> currentFiles;
         private string selectedPath;
         public FileScannerMain()
         {
             InitializeComponent();
+            var config = AppConfig.Load();
+            Database db = new Database();
+            scanService = new ScanService(config,db);
+            fileOperationsService = new FileOperationsService(db);
+            currentFiles = new List<FileData>();
         }
 
         private void FileScannerMain_Load(object sender, EventArgs e)
@@ -81,10 +81,9 @@ namespace FileScannerApp
             }
         }
 
-        
+
         private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            /*
             if (filesView.SelectedItems.Count == 0)
                 return;
 
@@ -98,56 +97,22 @@ namespace FileScannerApp
             if (result != DialogResult.Yes)
                 return;
 
-            var itemsToDelete = filesView.SelectedItems.Cast<ListViewItem>().ToList();
+            var items = filesView.SelectedItems.Cast<ListViewItem>().ToList();
+            var paths = items.Select(i => i.Tag.ToString()).ToList();
 
-            int deletedCount = 0;
-            int failedCount = 0;
+            var (deleted, failed) = fileOperationsService.DeleteFiles(paths);
 
-            foreach (var item in itemsToDelete)
-            {
-                string path = item.Tag.ToString();
-
-                try
-                {
-                    if (File.Exists(path))
-                    {
-                        File.Delete(path);
-                    }
-
-                    db.AddOperationLog(new OperationLog
-                    {
-                        OperationType = OperationType.Delete,
-                        FileName = Path.GetFileName(path),
-                        OldPath = path,
-                        NewPath = null,
-                        OperationDate = DateTime.Now,
-                        CanUndo = false
-                    });
-
-                    filesView.Items.Remove(item);
-                    deletedCount++;
-                }
-                catch (Exception ex)
-                {
-                    failedCount++;
-
-                    MessageBox.Show(
-                        $"Error deleting file:\n{path}\n\n{ex.Message}",
-                        "Delete error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error);
-                }
-            }
+            foreach (var item in items)
+                filesView.Items.Remove(item);
 
             UpdateStatus();
 
             MessageBox.Show(
-                $"Delete completed.\n\nDeleted: {deletedCount}\nFailed: {failedCount}",
+                $"Delete completed.\n\nDeleted: {deleted}\nFailed: {failed}",
                 "Delete",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information
             );
-            */
         }
 
 
@@ -174,11 +139,10 @@ namespace FileScannerApp
 
         }
 
-        
+
 
         private void moveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            /*
             if (filesView.SelectedItems.Count == 0)
             {
                 MessageBox.Show("No files selected.", "Move", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -190,78 +154,42 @@ namespace FileScannerApp
                 if (dialog.ShowDialog() != DialogResult.OK)
                     return;
 
-                string targetFolder = dialog.SelectedPath;
+                var items = filesView.SelectedItems.Cast<ListViewItem>().ToList();
 
-                int movedCount = 0;
-                int skippedCount = 0;
+                var paths = items
+                    .Where(i => i.Tag != null)
+                    .Select(i => i.Tag.ToString())
+                    .ToList();
 
-                foreach (ListViewItem item in filesView.SelectedItems)
+                var (moved, skipped, updatedPaths) =
+                    fileOperationsService.MoveFiles(paths, dialog.SelectedPath);
+
+                foreach (var (oldPath, newPath) in updatedPaths)
                 {
-                    string oldPath = item.Tag.ToString();
-                    string fileName = Path.GetFileName(oldPath);
-                    string newPath = Path.Combine(targetFolder, fileName);
+                    var item = items.FirstOrDefault(i => i.Tag?.ToString() == oldPath);
 
-                    try
+                    if (item != null)
                     {
-                        if (!File.Exists(oldPath))
-                        {
-                            skippedCount++;
-                            continue;
-                        }
-
-                        if (File.Exists(newPath))
-                        {
-                            skippedCount++;
-                            continue;
-                        }
-
-                        File.Move(oldPath, newPath);
-
-                        db.UpdateFilePath(oldPath, newPath);
-
-                        db.AddOperationLog(new OperationLog
-                        {
-                            OperationType = OperationType.Move,
-                            FileName = fileName,
-                            OldPath = oldPath,
-                            NewPath = newPath,
-                            OperationDate = DateTime.Now,
-                            CanUndo = true
-                        });
-
                         item.Tag = newPath;
 
                         if (item.SubItems.Count > 3)
                             item.SubItems[3].Text = newPath;
-
-                        movedCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(
-                            $"Error moving file:\n{fileName}\n\n{ex.Message}",
-                            "Move Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error);
                     }
                 }
 
+                UpdateStatus();
+
                 MessageBox.Show(
-                    $"Move completed.\n\nMoved: {movedCount}\nSkipped: {skippedCount}",
+                    $"Move completed.\n\nMoved: {moved}\nSkipped: {skipped}",
                     "Move",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information
                 );
-
-
-                UpdateStatus();
             }
-            */
         }
 
         private void filesView_AfterLabelEdit(object sender, LabelEditEventArgs e)
         {
-            /*
             if (string.IsNullOrWhiteSpace(e.Label))
             {
                 e.CancelEdit = true;
@@ -269,59 +197,26 @@ namespace FileScannerApp
             }
 
             var item = filesView.Items[e.Item];
+            string oldPath = item.Tag?.ToString();
 
-            string oldPath = item.Tag.ToString();
-            string directory = Path.GetDirectoryName(oldPath);
-            string extension = Path.GetExtension(oldPath);
-
-            string newName = e.Label;
-
-            if (!newName.EndsWith(extension))
+            if (oldPath == null)
             {
-                newName += extension;
-            }
-
-            string newPath = Path.Combine(directory, newName);
-
-            if (!File.Exists(oldPath))
-            {
-                MessageBox.Show("File does not exist.");
                 e.CancelEdit = true;
                 return;
             }
 
-            if (File.Exists(newPath))
+            var (success, newPath, error) =
+                fileOperationsService.RenameFile(oldPath, e.Label);
+
+            if (!success)
             {
-                MessageBox.Show("A file with this name already exists!");
+                MessageBox.Show(error);
                 e.CancelEdit = true;
                 return;
             }
 
-            try
-            {
-                File.Move(oldPath, newPath);
-
-                db.UpdateFilePath(oldPath, newPath);
-
-                db.AddOperationLog(new OperationLog
-                {
-                    OperationType = OperationType.Rename,
-                    FileName = newName,
-                    OldPath = oldPath,
-                    NewPath = newPath,
-                    OperationDate = DateTime.Now,
-                    CanUndo = true
-                });
-
-                item.Tag = newPath;
-                item.SubItems[3].Text = newPath;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Rename error: " + ex.Message);
-                e.CancelEdit = true;
-            }
-             */
+            item.Tag = newPath;
+            item.SubItems[3].Text = newPath;
         }
 
 
@@ -369,126 +264,54 @@ namespace FileScannerApp
             UpdateStatus();
         }
 
-        
+
         private async void scanButtonClick(object sender, EventArgs e)
         {
-            /*
 
             using (var scanForm = new ScanOptionsForm(selectedPath))
             {
-                if (scanForm.ShowDialog() == DialogResult.OK)
-                {
-                    this.selectedPath = scanForm.SelectedFolder;
+                if (scanForm.ShowDialog() != DialogResult.OK)
+                    return;
 
-                    var fileTypes = scanForm.FileTypes;
+                selectedPath = scanForm.SelectedFolder;
 
-                    var fileInfos = FileScannerService.Scan(selectedPath);
-                    var files = FileScannerService.Map(fileInfos);
-                    UpdateStatus();
+                var fileTypes = scanForm.FileTypes;
 
-                    await StartScanAsync(this.selectedPath,fileTypes);
-                }
+                var fileInfos = FileScannerService.Scan(selectedPath);
+                var files = FileScannerService.Map(fileInfos);
+
+                UpdateStatus();
+
+                int scanId = scanService.CreateScan(selectedPath, files.Count);
+
+                toolStripProgressBar1.Visible = true;
+                toolStripProgressBar1.Minimum = 0;
+                toolStripProgressBar1.Maximum = files.Count;
+                toolStripProgressBar1.Value = 0;
+
+                int result = await scanService.ScanFilesAsync(
+                    files,
+                    scanId,
+                    async progress =>
+                    {
+                        toolStripProgressBar1.Value = progress.Current;
+                        toolStripStatusLabel3.Text = $"Scanning {progress.Current}/{progress.Total}";
+                        toolStripStatusLabel4.Text = progress.CurrentFile;
+
+                        await Task.Yield();
+                    });
+
+                toolStripProgressBar1.Visible = false;
+                toolStripStatusLabel3.Text = "Scan completed";
+                toolStripStatusLabel4.Text = "";
+
+                MessageBox.Show($"Found {result} threats", "Scan completed");
+
+                new ScanResultsForm(scanId).Show();
             }
-            */
         }
 
 
-
-        /*
-        private async Task StartScanAsync(string folder, List<string> fileTypes)
-        {
-
-            var files = db.GetFiles($"Path LIKE '{folder}%'");
-
-            if (fileTypes != null && fileTypes.Count > 0)
-            {
-                files = files.Where(f => fileTypes.Contains(f.Extension.ToLower())).ToList();
-            }
-
-            if (files.Count == 0)
-            {
-                MessageBox.Show("No files for scan!");
-                return;
-            }
-
-
-            int scanId = db.CreateScan(folder, files.Count);
-            int threatsFound = 0;
-
-            toolStripProgressBar1.Visible = true;
-            toolStripProgressBar1.Minimum = 0;
-            toolStripProgressBar1.Maximum = files.Count;
-            toolStripProgressBar1.Value = 0;
-            toolStripStatusLabel3.Text = "Scanning...";
-            toolStripStatusLabel4.Text = "";
-
-            for (int i = 0; i < files.Count; i++)
-            {
-                var file = files[i];
-                string status = "Completed";
-                string json = "";
-
-                if (!File.Exists(file.Path))
-                {
-                    Console.WriteLine($"Missing: {file.Path}");
-                    continue;
-                }
-
-                try
-                {
-
-                    string fileHash = scanService.CalculateSHA256(file.Path);
-
-                    json = await scanService.GetFileReportAsync(fileHash);
-
-                    if (string.IsNullOrEmpty(json))
-                    {
-                        status = "Unknown";
-                    }
-                    else
-                    {
-                        var doc = JsonDocument.Parse(json);
-
-                        var stats = doc.RootElement
-                            .GetProperty("data")
-                            .GetProperty("attributes")
-                            .GetProperty("last_analysis_stats");
-
-                        int malicious = stats.GetProperty("malicious").GetInt32();
-
-                        if (malicious > 0)
-                        {
-                            status = "Malicious";
-                            threatsFound++;
-                        }
-                    }
-
-                    db.SaveScanResult(scanId, file.Name, status, json);
-                }
-                catch (Exception ex)
-                {
-                    db.SaveScanResult(scanId, file.Name, "Error", ex.Message);
-                }
-
-                await Task.Delay(15000);
-
-                toolStripProgressBar1.Value = i + 1;
-                toolStripStatusLabel3.Text = $"Scanning: {i + 1}/{files.Count}";
-                toolStripStatusLabel4.Text = file.Name;
-            }
-
-            db.UpdateScanResults(scanId, threatsFound, "Completed");
-
-            toolStripProgressBar1.Visible = false;
-            toolStripStatusLabel3.Text = "Scan completed";
-            toolStripStatusLabel4.Text = "";
-
-            MessageBox.Show($"Found {threatsFound} threats", "Scan completed");
-
-            new ScanResultsForm(scanId).Show();
-        }
-
-        */
 
         private void UpdateStatus()
         {

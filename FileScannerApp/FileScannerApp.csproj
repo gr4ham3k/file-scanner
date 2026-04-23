@@ -136,12 +136,14 @@
     <Compile Include="Models\OperationType.cs" />
     <Compile Include="Models\OrganizeOptions.cs" />
     <Compile Include="Models\RenamePreview.cs" />
+    <Compile Include="Models\ScanProgress.cs" />
     <Compile Include="RenameForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="RenameForm.Designer.cs">
       <DependentUpon>RenameForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="Services\FileOperationsService.cs" />
     <Compile Include="Services\FileScannerService.cs" />
     <Compile Include="FileScannerMain.cs">
       <SubType>Form</SubType>
@@ -248,9 +250,7 @@
   <ItemGroup>
     <None Include="Resources\refresh.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Repositories\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>

@@ -45,7 +45,8 @@ namespace FileScannerApp
 
             return files.Select(f => new RenamePreview
             {
-                NameBefore = f.FullName,
+                FullPath = f.FullName,
+                NameBefore = Path.GetFileName(f.FullName),
                 NameAfter = ""
             }).ToList();
         }
@@ -54,16 +55,16 @@ namespace FileScannerApp
         {
             foreach (var item in files)
             {
-                string directory = Path.GetDirectoryName(item.NameBefore);
+                string directory = Path.GetDirectoryName(item.FullPath);
                 string newPath = Path.Combine(directory, item.NameAfter);
 
-                if (!File.Exists(item.NameBefore))
+                if (!File.Exists(item.FullPath))
                     continue;
 
                 if (File.Exists(newPath))
                     throw new Exception($"File exists: {newPath}");
 
-                File.Move(item.NameBefore, newPath);
+                File.Move(item.FullPath, newPath);
             }
         }
 

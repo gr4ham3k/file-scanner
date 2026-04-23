@@ -8,6 +8,7 @@ namespace FileScannerApp.Models
 {
     public class RenamePreview
     {
+        public string FullPath { get; set; }
         public string NameBefore { get; set; }
         public string NameAfter { get; set; }
     }
